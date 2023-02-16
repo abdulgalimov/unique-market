@@ -1,0 +1,19 @@
+{
+  "name": "hardhat-project",
+  "scripts": {
+    "sol_format": "npx prettier --write 'contracts/**/*.sol'"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^1.0.2",
+    "hardhat": "^2.12.7",
+    "prettier": "^2.8.4",
+    "prettier-plugin-solidity": "^1.1.2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.1",
+    "@unique-nft/sdk": "^0.2.5",
+    "@unique-nft/solidity-interfaces": "^0.40.4",
+    "@unique-nft/substrate-client": "^0.8.0",
+    "@unique-nft/utils": "^0.3.5"
+  }
+}
