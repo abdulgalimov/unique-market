@@ -67,8 +67,6 @@ contract Market {
 
     function onlyTokenOwner(IERC721 erc721, uint32 tokenId) private {
         address realOwner = erc721.ownerOf(tokenId);
-        emit Log(utils.toString(realOwner));
-        emit Log(utils.toString(msg.sender));
 
         if (realOwner != msg.sender) {
             revert SenderNotOwner();
@@ -76,16 +74,7 @@ contract Market {
     }
 
     function isApproved(IERC721 erc721, Token memory token) private {
-        emit Log(
-            string.concat("isApproved, seller: ", utils.toString(token.seller))
-        );
-        emit Log(
-            string.concat(
-                "isApproved, selfAddress: ",
-                utils.toString(selfAddress)
-            )
-        );
-
+        // todo not implementable in chain
         try erc721.getApproved(token.tokenId) returns (address approved) {
             emit Log(
                 string.concat(
@@ -168,6 +157,7 @@ contract Market {
         Token memory token = tokens[collectionId][tokenId];
 
         IERC721 erc721 = getErc721(token.collectionId);
+
         isApproved(erc721, token);
 
         delete tokens[collectionId][tokenId];
