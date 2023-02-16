@@ -41,7 +41,7 @@ describe("e2e", function () {
   const tokenPrice = 12;
   it("put", async () => {
     await expect(
-      market.connect(ownerAccount).put(collectionId, tokenId, tokenPrice, {
+      market.connect(ownerAccount).put(collectionId, tokenId, tokenPrice, 1, {
         gasLimit: 10_000_000,
       })
     )

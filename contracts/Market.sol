@@ -90,7 +90,11 @@ contract Market {
         }
     }
 
-    function putAmount(
+    // ################################################################
+    // Place a token for sale                                         #
+    // ################################################################
+
+    function put(
         uint32 collectionId,
         uint32 tokenId,
         uint256 price,
@@ -114,9 +118,9 @@ contract Market {
         emit TokenIsUpForSale(token);
     }
 
-    function put(uint32 collectionId, uint32 tokenId, uint256 price) external {
-        return putAmount(collectionId, tokenId, price, 1);
-    }
+    // ################################################################
+    // Get token price                                                #
+    // ################################################################
 
     function getPrice(
         uint32 collectionId,
@@ -128,6 +132,10 @@ contract Market {
 
         return tokens[collectionId][tokenId].price;
     }
+
+    // ################################################################
+    // Revoke the token from the sale                                 #
+    // ################################################################
 
     function revoke(uint32 collectionId, uint32 tokenId) external {
         IERC721 erc721 = getErc721(collectionId);
@@ -143,6 +151,10 @@ contract Market {
 
         emit TokenWithdrawnFromSale(token);
     }
+
+    // ################################################################
+    // Buy a token                                                    #
+    // ################################################################
 
     function buy(uint32 collectionId, uint32 tokenId) public payable {
         uint256 price = tokens[collectionId][tokenId].price;
