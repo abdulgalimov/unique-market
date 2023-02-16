@@ -1,15 +1,12 @@
 import { expect } from "chai";
 import { Client } from "@unique-nft/sdk";
-import { createSdk, deploy, getAccounts } from "./utils";
+import { createSdk, deploy, getAccounts, getNetworkConfig } from "./utils";
 import { Market } from "../typechain-types";
-import { ethers } from "hardhat";
 
-const collectionId = 244;
-const tokenId = 3;
-const sdkBaseUrl = "http://localhost:3002/v1";
+const { collectionId, tokenId } = getNetworkConfig();
 
 describe("Market", function () {
-  let sdk: Client = createSdk(sdkBaseUrl);
+  let sdk: Client = createSdk();
 
   it("put fail; collection not found", async () => {
     const market = await deploy();
@@ -56,7 +53,7 @@ describe("Market", function () {
     ).to.be.revertedWithCustomError(market, "TokenIsNotApproved");
   });
 
-  it.only("buy fail; token is not approved", async () => {
+  it("buy fail; token is not approved", async () => {
     const { ownerAccount, otherAccount } = await getAccounts(
       sdk,
       collectionId,

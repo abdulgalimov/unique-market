@@ -3,10 +3,22 @@ import { Address } from "@unique-nft/utils";
 import { UniqueNFTFactory } from "@unique-nft/solidity-interfaces";
 import { Sdk, Client } from "@unique-nft/sdk";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { network } from "hardhat";
+import { loadConfig } from "../scripts/config";
 
-export function createSdk(sdkBaseUrl: string) {
+export function getNetworkConfig() {
+  type networks = "unq" | "opal";
+  const networkName = network.name as networks;
+
+  const appConfig = loadConfig();
+  return appConfig[networkName];
+}
+
+export function createSdk() {
+  const appConfig = loadConfig();
+
   const sdk = new Sdk({
-    baseUrl: sdkBaseUrl,
+    baseUrl: appConfig.sdkBaseUrl,
   });
   return sdk;
 }

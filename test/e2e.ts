@@ -1,17 +1,21 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { Client } from "@unique-nft/sdk";
-import { createSdk, deploy, getAccounts, getCollectionContract } from "./utils";
+import {
+  createSdk,
+  deploy,
+  getAccounts,
+  getCollectionContract,
+  getNetworkConfig,
+} from "./utils";
 import { UniqueNFT } from "@unique-nft/solidity-interfaces";
 import { Market } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-const collectionId = 244;
-const tokenId = 3;
-const sdkBaseUrl = "http://localhost:3002/v1";
+const { collectionId, tokenId } = getNetworkConfig();
 
 describe("e2e", function () {
-  let sdk: Client = createSdk(sdkBaseUrl);
+  let sdk: Client = createSdk();
   let ownerAccount: SignerWithAddress;
   let otherAccount: SignerWithAddress;
   let uniqueNFT: UniqueNFT;
@@ -86,8 +90,8 @@ describe("e2e", function () {
 
   it("check balances", async function () {
     const ownerBalanceAfter = await ownerAccount.getBalance();
-    expect(ownerBalanceBefore.sub(ownerBalanceAfter)).eq(
-      BigNumber.from(-tokenPrice)
+    expect(ownerBalanceAfter.sub(ownerBalanceBefore)).eq(
+      BigNumber.from(tokenPrice)
     );
 
     const otherBalanceAfter = await otherAccount.getBalance();
