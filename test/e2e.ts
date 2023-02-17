@@ -46,7 +46,13 @@ describe("e2e", function () {
       })
     )
       .to.emit(market, "TokenIsUpForSale")
-      .withArgs([collectionId, tokenId, tokenPrice, 1, ownerAccount.address]);
+      .withArgs("1", [
+        collectionId,
+        tokenId,
+        tokenPrice,
+        1,
+        ownerAccount.address,
+      ]);
   });
 
   let ownerBalanceBefore: BigNumber;
@@ -57,9 +63,13 @@ describe("e2e", function () {
   });
 
   it("check price", async () => {
-    await expect(await market.getPrice(collectionId, tokenId)).to.be.eq(
-      BigNumber.from(tokenPrice)
-    );
+    const order = await market.getOrder(collectionId, tokenId);
+
+    await expect(order.collectionId).to.be.eq(collectionId);
+    await expect(order.tokenId).to.be.eq(tokenId);
+    await expect(order.price).to.be.eq(BigNumber.from(tokenPrice));
+    await expect(order.amount).to.be.eq(1);
+    await expect(order.seller).to.be.eq(ownerAccount.address);
   });
 
   let buyUsePrice: BigNumber;
@@ -75,6 +85,7 @@ describe("e2e", function () {
     expect(event).to.deep.include({
       event: "TokenIsPurchased",
       args: [
+        "1",
         [
           collectionId,
           tokenId,
