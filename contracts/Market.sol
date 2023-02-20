@@ -109,6 +109,8 @@ contract Market {
             }
         } catch Error(string memory reason) {
             emit Log(string.concat("getApproved error: ", reason));
+        } catch {
+            emit Log(string.concat("getApproved error without reason"));
         }
     }
 
@@ -236,6 +238,8 @@ contract Market {
             erc721.transferFrom(order.seller, msg.sender, order.tokenId)
         {} catch Error(string memory reason) {
             revert FailTransformToken(reason);
+        } catch {
+            revert FailTransformToken("without reason");
         }
 
         order.seller.transfer(order.price);
