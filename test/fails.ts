@@ -1,7 +1,14 @@
 import { expect } from "chai";
 import { Client } from "@unique-nft/sdk";
-import { createSdk, deploy, getAccounts, getNetworkConfig } from "./utils";
+import {
+  createSdk,
+  deploy,
+  getAccounts,
+  getCollectionContract,
+  getNetworkConfig,
+} from "./utils";
 import { Market } from "../typechain-types";
+import * as wasi from "wasi";
 
 const { collectionId, tokenId } = getNetworkConfig();
 
@@ -38,7 +45,41 @@ describe("Market", function () {
 
     await expect(
       market.put(collectionId, 2, 3, 1)
-    ).to.be.revertedWithCustomError(market, "SenderNotOwner");
+    ).to.be.revertedWithCustomError(market, "SellerIsNotOwner");
+  });
+
+  it("check approved fail; order not found", async () => {
+    const market = await deploy();
+
+    await expect(
+      market.checkApproved(collectionId, tokenId)
+    ).to.revertedWithCustomError(market, "OrderNotFound");
+  });
+
+  it("check approved fail; seller not owner of token", async () => {
+    const { ownerAccount, otherAccount } = await getAccounts(
+      sdk,
+      collectionId,
+      tokenId
+    );
+    const market = await deploy();
+    const collection = await getCollectionContract(ownerAccount, collectionId);
+
+    await (await collection.approve(otherAccount.address, tokenId)).wait();
+
+    await (
+      await market.connect(ownerAccount).put(collectionId, tokenId, 3, 1)
+    ).wait();
+
+    await (
+      await collection
+        .connect(ownerAccount)
+        .transferFrom(ownerAccount.address, otherAccount.address, tokenId)
+    ).wait();
+
+    await expect(
+      market.checkApproved(collectionId, tokenId)
+    ).to.revertedWithCustomError(market, "SellerIsNotOwner");
   });
 
   it.skip("put fail; token is not approved", async () => {

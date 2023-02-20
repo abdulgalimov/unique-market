@@ -55,6 +55,22 @@ describe("e2e", function () {
       ]);
   });
 
+  it("check approved", async () => {
+    await expect(
+      market.connect(ownerAccount).checkApproved(collectionId, tokenId, {
+        gasLimit: 10_000_000,
+      })
+    )
+      .to.emit(market, "TokenIsApproved")
+      .withArgs("1", [
+        collectionId,
+        tokenId,
+        tokenPrice,
+        1,
+        ownerAccount.address,
+      ]);
+  });
+
   let ownerBalanceBefore: BigNumber;
   let otherBalanceBefore: BigNumber;
   it("balances before", async () => {

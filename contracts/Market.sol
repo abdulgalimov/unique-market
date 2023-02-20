@@ -26,7 +26,8 @@ contract Market {
         address payable seller;
     }
 
-    error SenderNotOwner();
+    error SellerIsNotOwner();
+    error TokenIsAlreadyOnSale();
     error TokenIsNotApproved();
     error CollectionNotFound();
     error CollectionNotSupportedERC721();
@@ -36,6 +37,7 @@ contract Market {
 
     event TokenIsUpForSale(string version, Order item);
     event TokenRevoke(string version, Order item);
+    event TokenIsApproved(string version, Order item);
     event TokenIsPurchased(string version, Order item);
     event Log(string message);
 
@@ -81,11 +83,15 @@ contract Market {
         return IERC721(collectionAddress);
     }
 
-    function onlyTokenOwner(IERC721 erc721, uint32 tokenId) private {
+    function onlyTokenOwner(
+        IERC721 erc721,
+        uint32 tokenId,
+        address seller
+    ) private {
         address realOwner = erc721.ownerOf(tokenId);
 
-        if (realOwner != msg.sender) {
-            revert SenderNotOwner();
+        if (realOwner != seller) {
+            revert SellerIsNotOwner();
         }
     }
 
@@ -129,7 +135,11 @@ contract Market {
         uint32 amount
     ) public onlyNonPause {
         IERC721 erc721 = getErc721(collectionId);
-        onlyTokenOwner(erc721, tokenId);
+        onlyTokenOwner(erc721, tokenId, msg.sender);
+
+        if (orders[collectionId][tokenId].price > 0) {
+            revert TokenIsAlreadyOnSale();
+        }
 
         Order memory order = Order(
             collectionId,
@@ -167,7 +177,7 @@ contract Market {
 
     function revoke(uint32 collectionId, uint32 tokenId) external {
         IERC721 erc721 = getErc721(collectionId);
-        onlyTokenOwner(erc721, tokenId);
+        onlyTokenOwner(erc721, tokenId, msg.sender);
 
         if (orders[collectionId][tokenId].price == 0) {
             revert OrderNotFound();
@@ -178,6 +188,25 @@ contract Market {
         delete orders[collectionId][tokenId];
 
         emit TokenRevoke(version, order);
+    }
+
+    // ################################################################
+    // Check approved                                                 #
+    // ################################################################
+
+    function checkApproved(uint32 collectionId, uint32 tokenId) public {
+        Order memory order = orders[collectionId][tokenId];
+        if (order.price == 0) {
+            revert OrderNotFound();
+        }
+
+        IERC721 erc721 = getErc721(collectionId);
+
+        onlyTokenOwner(erc721, tokenId, order.seller);
+
+        isApproved(erc721, order);
+
+        emit TokenIsApproved(version, order);
     }
 
     // ################################################################
