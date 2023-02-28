@@ -11,6 +11,11 @@ export function getNetworkConfig() {
   const networkName = network.name as networks;
 
   const appConfig = loadConfig();
+  if (!appConfig[networkName]) {
+    console.error(`Invalid network name: "${networkName}"`);
+    process.exit(-1);
+  }
+
   return appConfig[networkName];
 }
 
@@ -23,9 +28,9 @@ export function createSdk() {
   return sdk;
 }
 
-export async function deploy() {
+export async function deploy(fee: number = 10) {
   const Market = await ethers.getContractFactory("Market");
-  const market = await Market.deploy();
+  const market = await Market.deploy(fee);
 
   return market;
 }

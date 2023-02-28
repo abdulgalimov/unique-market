@@ -26,28 +26,36 @@ contract Market {
         address payable seller;
     }
 
+    error InvalidMarketFee();
     error SellerIsNotOwner();
     error TokenIsAlreadyOnSale();
     error TokenIsNotApproved();
     error CollectionNotFound();
     error CollectionNotSupportedERC721();
     error OrderNotFound();
+    error TooManyAmountRequested();
     error NotEnoughError();
     error FailTransformToken(string reason);
 
     event TokenIsUpForSale(string version, Order item);
     event TokenRevoke(string version, Order item);
     event TokenIsApproved(string version, Order item);
-    event TokenIsPurchased(string version, Order item);
+    event TokenIsPurchased(string version, Order item, uint256 salesAmount);
     event Log(string message);
 
     mapping(uint32 => mapping(uint32 => Order)) orders;
 
+    uint32 public marketFee;
     address selfAddress;
     address ownerAddress;
     bool marketPause;
 
-    constructor() {
+    constructor(uint32 fee) {
+        marketFee = fee;
+        if (marketFee == 0 || marketFee >= 100) {
+            revert InvalidMarketFee();
+        }
+
         ownerAddress = msg.sender;
         selfAddress = address(this);
     }
@@ -87,7 +95,7 @@ contract Market {
         IERC721 erc721,
         uint32 tokenId,
         address seller
-    ) private {
+    ) private view {
         address realOwner = erc721.ownerOf(tokenId);
 
         if (realOwner != seller) {
@@ -121,6 +129,10 @@ contract Market {
     function setOwner() public onlyOwner {
         ownerAddress = msg.sender;
     }
+
+    // ################################################################
+    // Set market pause                                               #
+    // ################################################################
 
     function setPause(bool pause) public onlyOwner {
         marketPause = pause;
@@ -177,17 +189,30 @@ contract Market {
     // Revoke the token from the sale                                 #
     // ################################################################
 
-    function revoke(uint32 collectionId, uint32 tokenId) external {
+    function revoke(
+        uint32 collectionId,
+        uint32 tokenId,
+        uint32 amount
+    ) external {
         IERC721 erc721 = getErc721(collectionId);
         onlyTokenOwner(erc721, tokenId, msg.sender);
 
-        if (orders[collectionId][tokenId].price == 0) {
+        Order memory order = orders[collectionId][tokenId];
+
+        if (order.price == 0) {
             revert OrderNotFound();
         }
 
-        Order memory order = orders[collectionId][tokenId];
+        if (amount > order.amount) {
+            revert TooManyAmountRequested();
+        }
 
-        delete orders[collectionId][tokenId];
+        order.amount -= amount;
+        if (order.amount == 0) {
+            delete orders[collectionId][tokenId];
+        } else {
+            orders[collectionId][tokenId] = order;
+        }
 
         emit TokenRevoke(version, order);
     }
@@ -217,14 +242,22 @@ contract Market {
 
     function buy(
         uint32 collectionId,
-        uint32 tokenId
+        uint32 tokenId,
+        uint32 amount
     ) public payable onlyNonPause {
         Order memory order = orders[collectionId][tokenId];
         if (order.price == 0) {
             revert OrderNotFound();
         }
 
-        if (order.price > msg.value) {
+        if (amount > order.amount) {
+            revert TooManyAmountRequested();
+        }
+
+        uint256 totalValue = order.price * amount;
+        uint256 feeValue = (totalValue * marketFee) / 100;
+        uint256 totalValueWithFee = totalValue + feeValue;
+        if (msg.value < totalValueWithFee) {
             revert NotEnoughError();
         }
 
@@ -232,7 +265,12 @@ contract Market {
 
         isApproved(erc721, order);
 
-        delete orders[collectionId][tokenId];
+        order.amount -= amount;
+        if (order.amount == 0) {
+            delete orders[collectionId][tokenId];
+        } else {
+            orders[collectionId][tokenId] = order;
+        }
 
         try
             erc721.transferFrom(order.seller, msg.sender, order.tokenId)
@@ -242,12 +280,20 @@ contract Market {
             revert FailTransformToken("without reason");
         }
 
-        order.seller.transfer(order.price);
+        order.seller.transfer(totalValue);
 
-        if (msg.value > order.price) {
-            payable(msg.sender).transfer(msg.value - order.price);
+        if (msg.value > totalValueWithFee) {
+            payable(msg.sender).transfer(msg.value - totalValueWithFee);
         }
 
-        emit TokenIsPurchased(version, order);
+        emit TokenIsPurchased(version, order, amount);
+    }
+
+    function withdraw(address transferTo) public onlyOwner {
+        uint256 balance = selfAddress.balance;
+
+        if (balance > 0) {
+            payable(transferTo).transfer(balance);
+        }
     }
 }

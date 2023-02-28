@@ -48,7 +48,7 @@ describe("Market", function () {
     ).to.be.revertedWithCustomError(market, "SellerIsNotOwner");
   });
 
-  it("check approved fail; order not found", async () => {
+  it("approved fail; order not found", async () => {
     const market = await deploy();
 
     await expect(
@@ -56,7 +56,7 @@ describe("Market", function () {
     ).to.revertedWithCustomError(market, "OrderNotFound");
   });
 
-  it("check approved fail; seller not owner of token", async () => {
+  it("approved fail; seller not owner of token", async () => {
     const { ownerAccount, otherAccount } = await getAccounts(
       sdk,
       collectionId,
@@ -108,11 +108,86 @@ describe("Market", function () {
     ).wait();
 
     await expect(
-      market.connect(otherAccount).buy(collectionId, tokenId, {
-        value: 10,
+      market.connect(otherAccount).buy(collectionId, tokenId, 1, {
+        value: 20,
       })
     )
       .to.be.revertedWithCustomError(market, "FailTransformToken")
       .withArgs("ApprovedValueTooLow");
+  });
+
+  it("buy fail; too many amount requested", async () => {
+    const { ownerAccount, otherAccount } = await getAccounts(
+      sdk,
+      collectionId,
+      tokenId
+    );
+    const market = await deploy();
+
+    const buyPrice = 10;
+
+    await (
+      await market
+        .connect(ownerAccount)
+        .put(collectionId, tokenId, buyPrice, 1, {
+          gasLimit: 10_000_000,
+        })
+    ).wait();
+
+    await expect(
+      market.connect(otherAccount).buy(collectionId, tokenId, 2, {
+        value: buyPrice * 2,
+      })
+    ).to.be.revertedWithCustomError(market, "TooManyAmountRequested");
+  });
+
+  it("buy fail; not enough money", async () => {
+    const { ownerAccount, otherAccount } = await getAccounts(
+      sdk,
+      collectionId,
+      tokenId
+    );
+    const market = await deploy();
+
+    const buyPrice = 10;
+
+    await (
+      await market
+        .connect(ownerAccount)
+        .put(collectionId, tokenId, buyPrice, 1, {
+          gasLimit: 10_000_000,
+        })
+    ).wait();
+
+    await expect(
+      market.connect(otherAccount).buy(collectionId, tokenId, 1, {
+        value: buyPrice - 1,
+      })
+    ).to.be.revertedWithCustomError(market, "NotEnoughError");
+  });
+
+  it("buy fail; not enough money for fee", async () => {
+    const { ownerAccount, otherAccount } = await getAccounts(
+      sdk,
+      collectionId,
+      tokenId
+    );
+    const market = await deploy();
+
+    const buyPrice = 10;
+
+    await (
+      await market
+        .connect(ownerAccount)
+        .put(collectionId, tokenId, buyPrice, 1, {
+          gasLimit: 10_000_000,
+        })
+    ).wait();
+
+    await expect(
+      market.connect(otherAccount).buy(collectionId, tokenId, 1, {
+        value: buyPrice,
+      })
+    ).to.be.revertedWithCustomError(market, "NotEnoughError");
   });
 });

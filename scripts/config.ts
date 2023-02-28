@@ -19,7 +19,7 @@ const env: Record<string, any> = process.env;
 
 function loadNetwork(prefix: string): NetworkConfig {
   return {
-    rpcUrl: env[`${prefix}_RPC_URL`] as string,
+    rpcUrl: env[`${prefix}_RPC_URL`],
     collectionId: +env[`${prefix}_COLLECTION_ID`] || 0,
     tokenId: +env[`${prefix}_TOKEN_ID`] || 0,
   };
