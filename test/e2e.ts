@@ -148,6 +148,7 @@ describe.only("e2e", function () {
   });
 
   it("revoke remaining tokens", async () => {
+    // todo fail, сейчас не корректно работает с refungible токенами
     await (
       await market
         .connect(ownerAccount)
